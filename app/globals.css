@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Cairo", "Tajawal", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  background-color: #f5f2e7;
+}
+
+body {
+  color: #12281d;
+  background-color: #f5f2e7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Card shell used across the app */
+.card {
+  background-color: #ffffff;
+  border: 1px solid #eae5d4;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+}
+
+/* Simple horizontal funnel bar track */
+.track {
+  background-color: #eef1e6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
