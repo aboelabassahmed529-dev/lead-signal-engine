@@ -1,0 +1,61 @@
+{
+  "name": "LSE — Meta Lead Ingestion (Step 2)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meta-leads",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Meta Leadgen Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [260, 300],
+      "webhookId": "meta-leads"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize a Meta lead into the shape /api/ingest expects.\n// Replace the field mapping with your real Lead Ads form field names, or\n// (better) use the Facebook Lead Ads trigger node to fetch full field_data.\n\nconst ACCOUNT_ID = '<<PUT-YOUR-ACCOUNT-ID>>'; // from Settings page in the app\n\nfunction normPhone(raw) {\n  if (!raw) return null;\n  let p = String(raw).replace(/[^0-9+]/g, '');\n  if (p.startsWith('00')) p = '+' + p.slice(2);\n  if (!p.startsWith('+')) {\n    // Egypt local (01xxxxxxxxx) -> +20\n    if (p.startsWith('0')) p = '+20' + p.slice(1);\n    else p = '+' + p;\n  }\n  return p;\n}\n\nconst body = $json.body || $json;\nconst fields = body.field_data || {};\n\nreturn [{\n  json: {\n    account_id: ACCOUNT_ID,\n    meta_lead_id: body.leadgen_id || body.lead_id || null,\n    full_name: fields.full_name || body.full_name || null,\n    phone: normPhone(fields.phone_number || body.phone || null),\n    email: fields.email || body.email || null,\n    fbclid: body.fbclid || null,\n    campaign_id: body.campaign_id || null,\n    adset_id: body.adset_id || null,\n    ad_meta_id: body.ad_id || null\n  }\n}];"
+      },
+      "id": "normalize",
+      "name": "Normalize Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "<<YOUR-APP-URL>>/api/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-ingest-secret", "value": "<<LEAD_INGEST_SECRET>>" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "post",
+      "name": "POST to Lead Signal Engine",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 300]
+    }
+  ],
+  "connections": {
+    "Meta Leadgen Webhook": {
+      "main": [[{ "node": "Normalize Lead", "type": "main", "index": 0 }]]
+    },
+    "Normalize Lead": {
+      "main": [[{ "node": "POST to Lead Signal Engine", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "pinData": {}
+}
